@@ -98,7 +98,7 @@ var DESTINOS={
  donacion:["Donación","Entregarlo hoy mientras todavía está apto para consumo."],
  retirar:["Retirar","Sacarlo de la venta: ya pasó su fecha."]
 };
-var vista="hoy", sel=null, elegido=null, editando=false, sesion=null, lotes=[], productos={}, lector=null;
+var vista="hoy", sel=null, elegido=null, editando=false, mover=null, sesion=null, lotes=[], productos={}, lector=null;
 var app=document.getElementById("app"), tabsEl=document.getElementById("tabs"), barra=document.getElementById("barra");
 
 function L(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
@@ -142,6 +142,7 @@ function pintar(){
   var q=document.getElementById("quien");
   if(q)q.onclick=function(){pararCamara();sesion=null;S("atr_sesion",null);sel=null;pintar()};
   if(vista==="hoy"||vista==="stock")conectarLotes();
+  if(vista==="historial")conectarHistorial();
 }
 
 function htmlEntrada(){
@@ -173,7 +174,7 @@ function conectarLotes(){
   Array.prototype.forEach.call(app.querySelectorAll(".lote"),function(b){
     b.onclick=function(){
       sel=lotes.filter(function(l){return l.id===b.getAttribute("data-id")})[0]||null;
-      elegido=sel?sugerido(dias(sel.vence)):null;pintar();window.scrollTo(0,0);
+      elegido=sel?sugerido(dias(sel.vence)):null;mover=null;pintar();window.scrollTo(0,0);
     };
   });
 }
@@ -198,17 +199,41 @@ function htmlDetalle(){
       '<span class="t">'+esc(dd[0])+(k===sug?'<span class="sug">Sugerido</span>':'')+'</span>'+
       '<span class="d">'+esc(dd[1])+'</span></button>';
   });
+  var tot=Number(l.cantidad)||0;
+  if(tot>0)h+='<label class="f" style="margin-top:8px"><span class="q">¿Cuántas unidades mueves? (de '+tot+')</span>'+
+    '<div style="display:flex;gap:10px"><input type="number" id="mover" min="1" max="'+tot+'" step="1" inputmode="numeric" value="'+esc(mover==null?tot:mover)+'">'+
+    '<button class="btn ghost small" type="button" id="todo" style="flex:none">Todas</button></div></label>'+
+    '<p class="note">Si mueves menos que el total, el resto sigue en el stock con la misma fecha.</p>';
   return h+'<p class="note">Todas las opciones respetan el límite sanitario: ninguna extiende la fecha de vencimiento.</p>'+
-    '<button class="btn" type="button" id="confirmar">Confirmar decisión</button>';
+    '<button class="btn" type="button" id="confirmar">Confirmar decisión</button>'+
+    '<p class="note bad" id="detmsg" style="margin-top:12px"></p>';
 }
 function conectarDetalle(){
   document.getElementById("volver").onclick=function(){sel=null;pintar()};
   document.getElementById("editar").onclick=function(){editando=true;pintar();window.scrollTo(0,0)};
   Array.prototype.forEach.call(app.querySelectorAll(".opt"),function(b){b.onclick=function(){elegido=b.getAttribute("data-k");pintar()}});
+  var mi=document.getElementById("mover");
+  if(mi){
+    mi.oninput=function(){mover=this.value};
+    document.getElementById("todo").onclick=function(){mover=null;mi.value=Number(sel.cantidad)||0};
+  }
   document.getElementById("confirmar").onclick=function(){
-    var l=lotes.filter(function(x){return x.id===sel.id})[0];
-    if(l){l.estado="resuelto";l.destino=elegido;l.resueltoTs=Date.now();l.resueltoPor=sesion.nombre;guardar()}
-    toast(DESTINOS[elegido][0]+" confirmado");sel=null;vista="hoy";pintar();
+    var l=lotes.filter(function(x){return x.id===sel.id})[0];if(!l)return;
+    var tot=Number(l.cantidad)||0,n=mi?Number(mi.value):tot;
+    if(tot>0&&(!(n>=1)||n>tot||Math.floor(n)!==n)){
+      document.getElementById("detmsg").textContent="Indica un número entero entre 1 y "+tot+".";return}
+    var ahora=Date.now();
+    if(tot>0&&n<tot){
+      l.cantidad=tot-n;
+      lotes.push({id:String(ahora)+"-"+Math.random().toString(36).slice(2,6),codigo:l.codigo,nombre:l.nombre,
+        cantidad:n,vence:l.vence,ts:l.ts,por:l.por,cargo:l.cargo,origen:l.id,
+        estado:"resuelto",destino:elegido,resueltoTs:ahora,resueltoPor:sesion.nombre});
+      toast(DESTINOS[elegido][0]+": "+n+" u · quedan "+(tot-n));
+    }else{
+      l.estado="resuelto";l.destino=elegido;l.resueltoTs=ahora;l.resueltoPor=sesion.nombre;
+      toast(DESTINOS[elegido][0]+" confirmado");
+    }
+    guardar();sel=null;mover=null;vista="hoy";pintar();
   };
 }
 
@@ -347,13 +372,31 @@ function htmlStock(){
 }
 function htmlHistorial(){
   var list=lotes.filter(function(l){return l.estado==="resuelto"}).sort(function(a,b){return (b.resueltoTs||0)-(a.resueltoTs||0)});
-  var h='<h1>Historial</h1><p class="sub">Lo que se decidió, con su hora y quién lo hizo.</p>';
+  var h='<h1>Historial</h1><p class="sub">Lo que se decidió, con su hora y quién lo hizo. Si algo quedó mal marcado, tócale Deshacer y vuelve al stock.</p>';
   if(!list.length)return h+'<div class="empty"><strong>Todavía no hay decisiones</strong>Cuando confirmes el destino de un lote, queda registrado acá.</div>';
   return h+list.map(function(l){
     var dd=DESTINOS[l.destino]||["—",""],f="";
     try{f=new Date(l.resueltoTs).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}catch(e){}
-    return '<div class="hist"><span><b>'+esc(l.nombre)+'</b><br><span class="d">'+esc(dd[0])+' · '+esc(l.cantidad||0)+' u'+(l.resueltoPor?' · '+esc(l.resueltoPor):'')+'</span></span><span class="d">'+esc(f)+'</span></div>';
+    return '<div class="hist"><span><b>'+esc(l.nombre)+'</b><br><span class="d">'+esc(dd[0])+' · '+esc(l.cantidad||0)+' u'+(l.resueltoPor?' · '+esc(l.resueltoPor):'')+'</span></span>'+
+      '<span style="text-align:right"><span class="d">'+esc(f)+'</span><br>'+
+      '<button class="btn ghost small" type="button" data-deshacer="'+esc(l.id)+'" style="margin-top:6px;padding:6px 12px">Deshacer</button></span></div>';
   }).join("");
+}
+function conectarHistorial(){
+  Array.prototype.forEach.call(app.querySelectorAll("[data-deshacer]"),function(b){
+    b.onclick=function(){deshacer(b.getAttribute("data-deshacer"))};
+  });
+}
+function deshacer(id){
+  var r=lotes.filter(function(x){return x.id===id})[0];if(!r)return;
+  var o=r.origen?lotes.filter(function(x){return x.id===r.origen&&x.estado!=="resuelto"})[0]:null;
+  if(o){
+    o.cantidad=(Number(o.cantidad)||0)+(Number(r.cantidad)||0);
+    lotes=lotes.filter(function(x){return x.id!==id});
+  }else{
+    r.estado="activo";delete r.destino;delete r.resueltoTs;delete r.resueltoPor;delete r.origen;
+  }
+  guardar();toast((r.nombre||"Lote")+" vuelve al stock");pintar();
 }
 
 var tEl=null;
