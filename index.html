@@ -98,7 +98,7 @@ var DESTINOS={
  donacion:["Donación","Entregarlo hoy mientras todavía está apto para consumo."],
  retirar:["Retirar","Sacarlo de la venta: ya pasó su fecha."]
 };
-var vista="hoy", sel=null, elegido=null, sesion=null, lotes=[], productos={}, lector=null;
+var vista="hoy", sel=null, elegido=null, editando=false, sesion=null, lotes=[], productos={}, lector=null;
 var app=document.getElementById("app"), tabsEl=document.getElementById("tabs"), barra=document.getElementById("barra");
 
 function L(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
@@ -125,7 +125,7 @@ function pintarTabs(){
   tabsEl.innerHTML=TABS.map(function(t){
     return '<button class="tab" type="button" data-v="'+t[0]+'" aria-current="'+(vista===t[0])+'"><span class="dot"></span>'+t[1]+'</button>';
   }).join("");
-  Array.prototype.forEach.call(tabsEl.children,function(b){b.onclick=function(){pararCamara();sel=null;vista=b.getAttribute("data-v");pintar();window.scrollTo(0,0)}});
+  Array.prototype.forEach.call(tabsEl.children,function(b){b.onclick=function(){pararCamara();sel=null;editando=false;vista=b.getAttribute("data-v");pintar();window.scrollTo(0,0)}});
 }
 function chip(){return sesion?'<button class="quien" type="button" id="quien">'+esc(sesion.nombre)+' · '+esc(sesion.cargo)+'</button>':""}
 
@@ -133,6 +133,7 @@ function pintar(){
   barra.hidden=!sesion;
   if(!sesion){app.innerHTML=htmlEntrada();conectarEntrada();return}
   pintarTabs();
+  if(sel&&editando){app.innerHTML=htmlEditar();conectarEditar();return}
   if(sel){app.innerHTML=htmlDetalle();conectarDetalle();return}
   if(vista==="hoy")app.innerHTML=chip()+htmlHoy();
   else if(vista==="registrar"){app.innerHTML=chip()+htmlRegistrar();conectarRegistrar()}
@@ -186,7 +187,8 @@ function htmlHoy(){
 }
 function htmlDetalle(){
   var l=sel,d=dias(l.vence),e=etiqueta(d),sug=sugerido(d);
-  var h='<button class="btn ghost small" type="button" id="volver">Volver</button>'+
+  var h='<div class="top"><button class="btn ghost small" type="button" id="volver">Volver</button>'+
+   '<button class="btn ghost small" type="button" id="editar">Editar lote</button></div>'+
    '<div class="sheet" style="margin-top:14px"><h2>'+esc(l.nombre||"Sin nombre")+'</h2>'+
    '<p class="note">'+esc(l.cantidad||0)+' unidades · vence '+esc(l.vence||"—")+' · <span class="'+e.cls+'" style="font-weight:600">'+e.txt+'</span></p></div>'+
    '<h2 style="margin-bottom:10px">¿Qué hacemos con este lote?</h2>';
@@ -201,11 +203,50 @@ function htmlDetalle(){
 }
 function conectarDetalle(){
   document.getElementById("volver").onclick=function(){sel=null;pintar()};
+  document.getElementById("editar").onclick=function(){editando=true;pintar();window.scrollTo(0,0)};
   Array.prototype.forEach.call(app.querySelectorAll(".opt"),function(b){b.onclick=function(){elegido=b.getAttribute("data-k");pintar()}});
   document.getElementById("confirmar").onclick=function(){
     var l=lotes.filter(function(x){return x.id===sel.id})[0];
     if(l){l.estado="resuelto";l.destino=elegido;l.resueltoTs=Date.now();l.resueltoPor=sesion.nombre;guardar()}
     toast(DESTINOS[elegido][0]+" confirmado");sel=null;vista="hoy";pintar();
+  };
+}
+
+function htmlEditar(){
+  var l=sel;
+  return '<button class="btn ghost small" type="button" id="cancelar">Cancelar</button>'+
+   '<h1 style="margin:14px 0 4px">Editar lote</h1>'+
+   '<p class="sub">Corrige lo que quedó mal registrado. El cambio queda a tu nombre.</p>'+
+   '<label class="f"><span class="q">Nombre del producto</span><input type="text" id="enom" autocomplete="off" value="'+esc(l.nombre)+'"></label>'+
+   '<label class="f"><span class="q">Código del producto</span><input type="text" id="ecod" autocomplete="off" placeholder="Opcional" value="'+esc(l.codigo)+'"></label>'+
+   '<div class="pair">'+
+   '<label class="f"><span class="q">Cuántos tienes</span><input type="number" id="ecant" min="0" step="1" inputmode="numeric" value="'+esc(l.cantidad||0)+'"></label>'+
+   '<label class="f"><span class="q">Vence el</span><input type="date" id="evence" value="'+esc(l.vence)+'"></label></div>'+
+   '<button class="btn" type="button" id="guardaredit">Guardar cambios</button>'+
+   '<p class="note" id="editmsg" style="margin-top:12px"></p>'+
+   '<button class="btn ghost" type="button" id="eliminar" style="margin-top:8px;color:var(--u0)">Eliminar lote</button>';
+}
+function conectarEditar(){
+  document.getElementById("cancelar").onclick=function(){editando=false;pintar()};
+  document.getElementById("guardaredit").onclick=function(){
+    var msg=document.getElementById("editmsg");
+    var nombre=document.getElementById("enom").value.trim();
+    var codigo=document.getElementById("ecod").value.trim();
+    var cantidad=Number(document.getElementById("ecant").value)||0;
+    var vence=document.getElementById("evence").value;
+    if(!nombre){msg.textContent="Falta el nombre del producto.";msg.className="note bad";return}
+    if(!vence){msg.textContent="Falta la fecha de vencimiento.";msg.className="note bad";return}
+    sel.nombre=nombre;sel.codigo=codigo;sel.cantidad=cantidad;sel.vence=vence;
+    sel.editadoTs=Date.now();sel.editadoPor=sesion.nombre;
+    if(codigo)productos[codigo]=nombre;
+    guardar();toast("Cambios guardados");editando=false;pintar();
+  };
+  var del=document.getElementById("eliminar"),armado=false;
+  del.onclick=function(){
+    if(!armado){armado=true;del.textContent="Toca otra vez para eliminar";return}
+    var id=sel.id,nom=sel.nombre;
+    lotes=lotes.filter(function(x){return x.id!==id});
+    guardar();toast((nom||"Lote")+" eliminado");sel=null;editando=false;pintar();window.scrollTo(0,0);
   };
 }
 
@@ -300,7 +341,7 @@ function guardarLote(){
 function htmlStock(){
   var list=activos().slice().sort(function(a,b){var x=dias(a.vence),y=dias(b.vence);return (x==null?999:x)-(y==null?999:y)});
   var h='<div class="top"><h1>Stock registrado</h1><span class="count">'+list.length+' lote'+(list.length===1?"":"s")+'</span></div>'+
-        '<p class="sub">Todo lo cargado, del más próximo a vencer al más lejano.</p>';
+        '<p class="sub">Todo lo cargado, del más próximo a vencer al más lejano. Toca un lote para decidir o editarlo.</p>';
   if(!list.length)return h+'<div class="empty"><strong>El stock está vacío</strong>Registra un producto con su fecha para empezar.</div>';
   return h+list.map(tarjeta).join("");
 }
