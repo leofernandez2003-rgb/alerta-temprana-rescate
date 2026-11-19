@@ -3,93 +3,163 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Cero Merma</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#055bd3">
+<meta name="description" content="Cero Merma: alerta temprana de vencimientos para minimarkets">
+<title>Cero Merma · Alertas de vencimiento</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23055bd3'/%3E%3Ccircle cx='16' cy='16' r='8.5' fill='none' stroke='%23ffffff' stroke-width='3.6'/%3E%3Cpath d='M12.4 16.4l2.6 2.6 4.8-5.4' fill='none' stroke='%23ffffff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{
---ink:#1C1B2E; --paper:#FBFAF7; --card:#FFFFFF; --surface:#EFEDE8; --line:#DFDCD4; --muted:#6A6778;
---accent:#3B3A8C; --onaccent:#FFFFFF;
---u0:#B3261E; --u1:#B4530C; --u2:#7E630D; --u3:#2F6B4F;
---display:'Space Grotesk',Arial,sans-serif; --text:'Inter',Verdana,sans-serif;
-color-scheme:light;
+color-scheme:dark;font-family:Arial,Helvetica,sans-serif;background:#055bd3;
+--navy:#091f39;--blue:#055bd3;--seam:#0763d9;
+--soft:rgba(255,255,255,.88);--glass:rgba(255,255,255,.14);--edge:rgba(255,255,255,.36);
+--ink:#091f39;--muted:#4b5f7c;--field:#eef3fa;
+--u0:#c0261c;--u1:#a8500b;--u2:#77600a;--u3:#1d7a4e;
 }
-@media (prefers-color-scheme:dark){:root{
---ink:#F1F0F6; --paper:#131221; --card:#1C1B2E; --surface:#252338; --line:#343149; --muted:#9C98B4;
---accent:#9D9BF0; --onaccent:#131221;
---u0:#FF8A80; --u1:#FFB05C; --u2:#E6CB64; --u3:#73D5A6; color-scheme:dark}}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{background:var(--paper);color:var(--ink);font-family:var(--text);font-size:16px;line-height:1.5;
+html,body{margin:0;padding:0;min-width:320px}
+body{min-height:100vh;color:#fff;font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;
+background:linear-gradient(128deg,#0753bf 0%,#0069e9 48%,#0755c4 100%);
 padding-top:env(safe-area-inset-top,0px)}
+/* Capa fija: el degradado se queda quieto aunque la página haga scroll (background-attachment:fixed falla en iOS) */
+body::before{content:"";position:fixed;inset:-15%;z-index:-1;pointer-events:none;
+background:
+ radial-gradient(circle at 50% 46%,rgba(0,119,255,.48) 0%,rgba(0,102,235,.28) 35%,rgba(0,73,183,.15) 72%,rgba(0,58,150,.06) 100%),
+ radial-gradient(ellipse at 5% 15%,rgba(13,72,174,.24),transparent 44%),
+ radial-gradient(ellipse at 92% 86%,rgba(7,63,162,.28),transparent 45%);
+filter:blur(28px)}
+.edge-line{position:fixed;top:1.6%;right:.48%;width:2px;height:9.8%;border-radius:2px;z-index:1;pointer-events:none;
+background:rgba(202,226,249,.73);box-shadow:0 0 6px rgba(197,227,255,.16)}
+[hidden]{display:none!important}
 .wrap{max-width:560px;margin:0 auto;
 padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-padding-block:20px 128px}
-h1{font-family:var(--display);font-size:22px;font-weight:700;margin:0;letter-spacing:-.3px}
-h2{font-family:var(--display);font-size:19px;font-weight:600;margin:0 0 4px;letter-spacing:-.2px}
-.sub{color:var(--muted);font-size:14px;margin:4px 0 20px}
+padding-block:18px 128px}
+
+.cab{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.marca{display:inline-flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.marca svg{width:28px;height:28px;display:block}
+.quien{background:var(--glass);border:1px solid var(--edge);border-radius:999px;padding:7px 14px;max-width:100%;
+font:inherit;font-size:13px;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h1{font-size:clamp(28px,8vw,36px);font-weight:700;line-height:1.05;letter-spacing:-.025em;margin:0;
+text-shadow:0 1px 3px rgba(255,255,255,.18),0 2px 5px rgba(0,24,68,.14)}
+h2{font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0 0 4px;line-height:1.2}
+.sub{color:var(--soft);font-style:italic;font-size:15px;margin:8px 0 20px}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.count{font-family:var(--display);font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
-.quien{background:var(--surface);border:none;border-radius:999px;padding:7px 14px;margin-bottom:14px;
-font:inherit;font-family:var(--display);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
-.lote{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;
-padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;
-font:inherit;color:inherit;cursor:pointer}
-.lote .nom{font-weight:600;font-size:17px;grid-column:1}
+.count{font-size:13px;font-weight:700;color:var(--soft);font-variant-numeric:tabular-nums}
+
+.hero{padding:26px 0 28px}
+.logo-xl{width:72px;height:72px;margin-bottom:26px;display:block}
+.marca-xl{font-size:clamp(46px,15vw,66px);letter-spacing:-.035em;line-height:.95}
+.lema{font-size:clamp(21px,6.4vw,28px);font-style:italic;font-weight:300;letter-spacing:-.03em;margin:12px 0 0;
+text-shadow:0 1px 4px rgba(0,28,75,.18)}
+.panel{background:rgba(9,31,57,.32);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:18px 16px 4px}
+
+.resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 16px}
+.resumen div{background:var(--navy);border-radius:14px;padding:12px 10px}
+.resumen b{display:block;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.resumen span{display:block;font-size:12px;color:var(--soft);margin-top:4px;line-height:1.25}
+
+.lote{width:100%;text-align:left;background:#fff;color:var(--ink);border:none;border-radius:16px;
+padding:14px 16px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:3px 12px;align-items:center;
+font:inherit;cursor:pointer;box-shadow:0 2px 6px rgba(0,20,68,.14)}
+.lote .nom{font-weight:700;font-size:17px;grid-column:1;letter-spacing:-.01em}
 .lote .meta{color:var(--muted);font-size:14px;grid-column:1;font-variant-numeric:tabular-nums}
-.tag{grid-column:2;grid-row:1 / span 2;justify-self:end;font-family:var(--display);font-size:13px;font-weight:600;
-padding:6px 11px;border-radius:999px;white-space:nowrap;border:1.5px solid currentColor}
+.tag{grid-column:2;grid-row:1 / span 2;justify-self:end;font-size:13px;font-weight:700;
+padding:6px 11px;border-radius:999px;white-space:nowrap;border:2px solid currentColor}
 .u0{color:var(--u0)}.u1{color:var(--u1)}.u2{color:var(--u2)}.u3{color:var(--u3)}
-.bar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:rgba(9,31,57,.94);
+-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.08);
 padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));
 padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
 .barin{max-width:560px;margin:0 auto;display:flex}
-.tab{flex:1;background:none;border:none;font:inherit;font-family:var(--display);font-size:12px;font-weight:600;
-color:var(--muted);padding:9px 2px 7px;cursor:pointer;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab{flex:1;background:none;border:none;font:inherit;font-size:12px;font-weight:700;color:rgba(255,255,255,.62);
+padding:9px 2px 7px;cursor:pointer;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:4px}
 .tab .dot{width:22px;height:3px;border-radius:2px;background:transparent}
-.tab[aria-current="true"]{color:var(--accent)}
-.tab[aria-current="true"] .dot{background:var(--accent)}
+.tab[aria-current="true"]{color:#fff}
+.tab[aria-current="true"] .dot{background:#fff}
+
 .f{display:block;margin-bottom:18px}
-.f > span.q{display:block;font-weight:500;margin-bottom:7px;font-size:15px}
-input,select{width:100%;font:inherit;font-size:17px;color:var(--ink);background:var(--card);
-border:1px solid var(--line);border-radius:12px;padding:13px}
-.btn{font-family:var(--display);font-size:16px;font-weight:600;border:none;border-radius:12px;padding:15px 20px;
-cursor:pointer;background:var(--accent);color:var(--onaccent);width:100%}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.btn.small{padding:10px 14px;font-size:14px;width:auto}
+.q{display:block;font-weight:700;margin-bottom:8px;font-size:15px}
+input,select{width:100%;font:inherit;font-size:17px;color:var(--ink);background:#fff;border:2px solid transparent;
+border-radius:12px;padding:12px 13px;min-height:50px}
+input:focus,select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(255,255,255,.55)}
+input::placeholder{color:#7a8aa3}
+.btn{font:inherit;font-size:16px;font-weight:700;border:none;border-radius:12px;padding:15px 20px;cursor:pointer;
+background:#fff;color:var(--blue);width:100%;box-shadow:0 2px 6px rgba(0,20,68,.16);letter-spacing:-.01em}
+.btn.navy{background:var(--navy);color:#fff}
+.btn.ghost{background:transparent;color:#fff;border:1.5px solid var(--edge);box-shadow:none}
+.btn.small{padding:9px 14px;font-size:14px;width:auto}
+.btn.peligro{background:transparent;color:#ffd0c8;border:1.5px solid #ffb4a8;box-shadow:none}
+.btn:active{transform:translateY(1px)}
 .btn[disabled]{opacity:.45;cursor:default}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
-.note{font-size:14px;color:var(--muted);margin:0 0 14px}
-.note.good{color:var(--u3)}
-.note.bad{color:var(--u0)}
+.note{font-size:14px;color:var(--soft);margin:10px 0 14px}
+.note:empty{display:none}
+.note.good,.note.bad{background:var(--navy);padding:9px 12px;border-radius:10px;font-weight:700}
+.note.good{color:#8ff0c0}.note.bad{color:#ffb4a8}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:15px;font-weight:700;color:#fff;background:var(--glass);border:1.5px solid var(--edge);
+border-radius:999px;padding:8px 14px;min-height:42px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#fff;color:var(--blue);border-color:#fff}
+.fecha-elegida{font-size:14px;color:var(--soft);margin:8px 0 0;font-style:italic}
+.stepper{display:flex;gap:8px}
+.stepper input{text-align:center;font-weight:700}
+.paso{flex:0 0 54px;font:inherit;font-size:24px;font-weight:700;border:none;border-radius:12px;background:var(--navy);color:#fff;cursor:pointer}
+
 .scanbox{position:relative;border-radius:16px;overflow:hidden;background:#000;margin-bottom:12px;aspect-ratio:4/3}
 .scanbox video{width:100%;height:100%;object-fit:cover;display:block}
 .mira{position:absolute;left:12%;right:12%;top:38%;height:24%;border:3px solid rgba(255,255,255,.9);border-radius:10px;
 box-shadow:0 0 0 2000px rgba(0,0,0,.28)}
-.opt{width:100%;text-align:left;background:var(--surface);border:2px solid transparent;border-radius:13px;
-padding:14px 16px;margin-bottom:10px;font:inherit;color:inherit;cursor:pointer}
-.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--card)}
-.opt .t{font-family:var(--display);font-weight:600;font-size:16px;display:flex;justify-content:space-between;gap:10px;align-items:center}
-.opt .d{color:var(--muted);font-size:14px;margin-top:3px}
-.sug{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
-.sheet{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
-.empty{text-align:center;padding:40px 14px;color:var(--muted)}
-.empty strong{display:block;font-family:var(--display);color:var(--ink);font-size:17px;margin-bottom:6px}
-.hist{border-bottom:1px solid var(--line);padding:12px 0;display:flex;justify-content:space-between;gap:12px;font-size:15px}
+
+.sheet{background:#fff;color:var(--ink);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 2px 6px rgba(0,20,68,.14)}
+.sheet .note{color:var(--muted);margin:6px 0 0}
+.opt{width:100%;text-align:left;background:rgba(255,255,255,.93);color:var(--ink);border:2px solid transparent;border-radius:14px;
+padding:14px 16px;margin-bottom:10px;font:inherit;cursor:pointer;display:block}
+.opt[aria-pressed="true"]{background:#fff;border-color:var(--navy);box-shadow:0 0 0 3px rgba(255,255,255,.45)}
+.opt .t{font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.opt .d{display:block;color:var(--muted);font-size:14px;margin-top:3px}
+.sug{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;background:var(--seam);padding:3px 8px;border-radius:999px}
+.empty{text-align:center;padding:36px 16px;color:var(--soft);background:var(--glass);border:1.5px dashed var(--edge);border-radius:16px}
+.empty strong{display:block;color:#fff;font-size:18px;margin-bottom:6px}
+.hist{background:#fff;color:var(--ink);border-radius:14px;padding:12px 14px;margin-bottom:8px;
+display:flex;justify-content:space-between;gap:12px;font-size:15px;box-shadow:0 2px 6px rgba(0,20,68,.12)}
 .hist .d{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.hist .btn.ghost{color:var(--ink);border-color:#c5d1e3;margin-top:6px;padding:6px 12px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));
-background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:999px;font-size:15px;z-index:9;max-width:90vw}
-.entrada{padding-top:16px}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+background:var(--navy);color:#fff;padding:12px 18px;border-radius:999px;font-size:15px;font-weight:700;z-index:9;max-width:90vw;
+box-shadow:0 6px 18px rgba(0,20,68,.3)}
+:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+@media (prefers-reduced-motion:no-preference){
+.entra>*{animation:sube .62s cubic-bezier(.16,1,.3,1) backwards}
+.entra>*:nth-child(2){animation-delay:.05s}.entra>*:nth-child(3){animation-delay:.1s}
+.entra>*:nth-child(4){animation-delay:.15s}.entra>*:nth-child(5){animation-delay:.2s}
+.entra>*:nth-child(6){animation-delay:.25s}.entra>*:nth-child(n+7){animation-delay:.3s}
+.entra .marca-xl{will-change:transform,opacity,clip-path;animation:revela 1s cubic-bezier(.16,1,.3,1) .12s backwards}
+.entra .lema{will-change:transform,opacity,clip-path;animation:baja .86s cubic-bezier(.16,1,.3,1) .8s backwards}
+.entra .logo-xl .anillo{animation:traza-anillo .9s cubic-bezier(.16,1,.3,1) .25s backwards}
+.entra .logo-xl .visto{animation:traza-visto .55s cubic-bezier(.22,1,.36,1) .85s backwards}
+.edge-line{transform-origin:50% 0;animation:filo .62s cubic-bezier(.22,1,.36,1) .22s backwards}
+@keyframes sube{from{opacity:0;transform:translateY(14px)}}
+@keyframes revela{from{opacity:0;clip-path:inset(0 0 100% 0);transform:translateY(28px)}}
+@keyframes baja{from{opacity:0;clip-path:inset(100% 0 0 0);transform:translateY(22px)}}
+@keyframes traza-anillo{from{stroke-dashoffset:54}}
+@keyframes traza-visto{from{stroke-dashoffset:16}}
+@keyframes filo{from{opacity:0;transform:scaleY(0)}}
+}
 </style>
 </head>
 <body>
+<span class="edge-line" aria-hidden="true"></span>
 <div class="wrap" id="app"></div>
 <div class="bar" id="barra" hidden><div class="barin" id="tabs"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script>
+var LOGO='<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#fff"/>'+
+ '<circle class="anillo" cx="16" cy="16" r="8.5" fill="none" stroke="#055bd3" stroke-width="3.6" stroke-dasharray="54" transform="rotate(-90 16 16)"/>'+
+ '<path class="visto" d="M12.4 16.4l2.6 2.6 4.8-5.4" fill="none" stroke="#091f39" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="16"/></svg>';
 var TABS=[["hoy","Hoy"],["registrar","Registrar"],["stock","Stock"],["historial","Historial"]];
 var CARGOS=["Dueño o dueña","Encargado o encargada","Vendedor o vendedora","Otro"];
 var DESTINOS={
@@ -98,7 +168,8 @@ var DESTINOS={
  donacion:["Donación","Entregarlo hoy mientras todavía está apto para consumo."],
  retirar:["Retirar","Sacarlo de la venta: ya pasó su fecha."]
 };
-var vista="hoy", sel=null, elegido=null, editando=false, mover=null, sesion=null, lotes=[], productos={}, lector=null;
+var RAPIDAS=[[0,"Hoy"],[1,"Mañana"],[3,"En 3 días"],[7,"1 semana"],[14,"2 semanas"],[30,"1 mes"]];
+var vista="hoy", sel=null, elegido=null, editando=false, mover=null, sesion=null, lotes=[], productos={}, lector=null, ultima="";
 var app=document.getElementById("app"), tabsEl=document.getElementById("tabs"), barra=document.getElementById("barra");
 
 function L(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
@@ -106,9 +177,13 @@ function S(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 sesion=L("atr_sesion",null); lotes=L("atr_lotes",[]); productos=L("atr_productos",{});
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"")}
 function p2(n){return (n<10?"0":"")+n}
-function hoyISO(){var d=new Date();return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
+function sumarDias(n){var d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())}
+function hoyISO(){return sumarDias(0)}
 function dias(v){if(!v)return null;var a=new Date(v+"T00:00:00"),b=new Date(hoyISO()+"T00:00:00");if(isNaN(a))return null;return Math.round((a-b)/86400000)}
+function fechaCorta(v){if(!v)return "—";var d=new Date(v+"T00:00:00");if(isNaN(d))return v;
+  try{return d.toLocaleDateString("es-CL",{weekday:"short",day:"numeric",month:"short"})}catch(e){return v}}
 function etiqueta(d){
   if(d==null)return {txt:"Sin fecha",cls:"u2"};
   if(d<0)return {txt:"Vencido",cls:"u0"};
@@ -123,36 +198,45 @@ function guardar(){S("atr_lotes",lotes);S("atr_productos",productos)}
 
 function pintarTabs(){
   tabsEl.innerHTML=TABS.map(function(t){
-    return '<button class="tab" type="button" data-v="'+t[0]+'" aria-current="'+(vista===t[0])+'"><span class="dot"></span>'+t[1]+'</button>';
+    return '<button class="tab" type="button" data-v="'+t[0]+'" aria-current="'+(vista===t[0]&&!sel)+'"><span class="dot"></span>'+t[1]+'</button>';
   }).join("");
   Array.prototype.forEach.call(tabsEl.children,function(b){b.onclick=function(){pararCamara();sel=null;editando=false;vista=b.getAttribute("data-v");pintar();window.scrollTo(0,0)}});
 }
-function chip(){return sesion?'<button class="quien" type="button" id="quien">'+esc(sesion.nombre)+' · '+esc(sesion.cargo)+'</button>':""}
+function cabecera(){
+  return '<header class="cab"><span class="marca">'+LOGO+'<span>Cero Merma</span></span>'+
+    (sesion?'<button class="quien" type="button" id="quien" title="Cambiar de usuario">'+esc(sesion.nombre)+' · '+esc(sesion.cargo)+'</button>':'')+'</header>';
+}
+/* Anima la entrada solo al cambiar de pantalla, no al repintar la misma (p. ej. al elegir una opción) */
+function animar(clave){if(clave===ultima)return;ultima=clave;app.classList.remove("entra");void app.offsetWidth;app.classList.add("entra")}
 
 function pintar(){
   barra.hidden=!sesion;
-  if(!sesion){app.innerHTML=htmlEntrada();conectarEntrada();return}
+  if(!sesion){app.innerHTML=htmlEntrada();conectarEntrada();animar("entrada");return}
   pintarTabs();
-  if(sel&&editando){app.innerHTML=htmlEditar();conectarEditar();return}
-  if(sel){app.innerHTML=htmlDetalle();conectarDetalle();return}
-  if(vista==="hoy")app.innerHTML=chip()+htmlHoy();
-  else if(vista==="registrar"){app.innerHTML=chip()+htmlRegistrar();conectarRegistrar()}
-  else if(vista==="stock")app.innerHTML=chip()+htmlStock();
-  else app.innerHTML=chip()+htmlHistorial();
+  var clave;
+  if(sel&&editando){clave="e"+sel.id;app.innerHTML=cabecera()+htmlEditar();conectarEditar()}
+  else if(sel){clave="d"+sel.id;app.innerHTML=cabecera()+htmlDetalle();conectarDetalle()}
+  else{
+    clave=vista;
+    if(vista==="hoy"){app.innerHTML=cabecera()+htmlHoy();conectarLotes()}
+    else if(vista==="registrar"){app.innerHTML=cabecera()+htmlRegistrar();conectarRegistrar()}
+    else if(vista==="stock"){app.innerHTML=cabecera()+htmlStock();conectarLotes();conectarStock()}
+    else{app.innerHTML=cabecera()+htmlHistorial();conectarHistorial()}
+  }
   var q=document.getElementById("quien");
-  if(q)q.onclick=function(){pararCamara();sesion=null;S("atr_sesion",null);sel=null;pintar()};
-  if(vista==="hoy"||vista==="stock")conectarLotes();
-  if(vista==="historial")conectarHistorial();
+  if(q)q.onclick=function(){pararCamara();sesion=null;S("atr_sesion",null);sel=null;editando=false;pintar()};
+  animar(clave);
 }
 
 function htmlEntrada(){
   var ops=CARGOS.map(function(c){return '<option>'+esc(c)+'</option>'}).join("");
-  return '<div class="entrada"><h1>Alerta Temprana de Rescate</h1>'+
-   '<p class="sub">Antes de empezar, dinos quién va a usar la app. Queda registrado en cada decisión.</p>'+
+  return '<section class="hero"><div class="logo-xl">'+LOGO+'</div>'+
+   '<h1 class="marca-xl">Cero Merma</h1><p class="lema">Alerta temprana de vencimientos</p></section>'+
+   '<div class="panel"><p class="sub" style="margin-top:0">Antes de empezar, dinos quién va a usar la app. Queda registrado en cada decisión.</p>'+
    '<label class="f"><span class="q">Nombre</span><input type="text" id="enombre" autocomplete="off"></label>'+
    '<label class="f"><span class="q">Cargo</span><select id="ecargo"><option value="">Elige tu cargo</option>'+ops+'</select></label>'+
    '<button class="btn" type="button" id="entrar">Entrar</button>'+
-   '<p class="note" id="entmsg" style="margin-top:12px"></p></div>';
+   '<p class="note" id="entmsg"></p><div style="height:14px"></div></div>';
 }
 function conectarEntrada(){
   document.getElementById("entrar").onclick=function(){
@@ -165,9 +249,9 @@ function conectarEntrada(){
 
 function tarjeta(l){
   var d=dias(l.vence),e=etiqueta(d);
-  return '<button class="lote" type="button" data-id="'+esc(l.id)+'">'+
+  return '<button class="lote" type="button" data-id="'+esc(l.id)+'" data-n="'+esc((l.nombre||"")+" "+(l.codigo||""))+'">'+
     '<span class="nom">'+esc(l.nombre||"Sin nombre")+'</span>'+
-    '<span class="meta">'+esc(l.cantidad||0)+' u · vence '+esc(l.vence||"—")+'</span>'+
+    '<span class="meta">'+esc(l.cantidad||0)+' u · vence '+esc(fechaCorta(l.vence))+'</span>'+
     '<span class="tag '+e.cls+'">'+e.txt+'</span></button>';
 }
 function conectarLotes(){
@@ -181,9 +265,12 @@ function conectarLotes(){
 function htmlHoy(){
   var list=activos().filter(function(l){var d=dias(l.vence);return d==null||d<=3})
     .sort(function(a,b){return (dias(a.vence)==null?99:dias(a.vence))-(dias(b.vence)==null?99:dias(b.vence))});
-  var h='<div class="top"><h1>Alertas del turno</h1><span class="count">'+hoyISO()+'</span></div>'+
+  var h='<div class="top"><h1>Alertas del turno</h1><span class="count">'+esc(fechaCorta(hoyISO()))+'</span></div>'+
         '<p class="sub">Lotes que vencen en 3 días o menos. Toca uno para decidir qué hacer.</p>';
   if(!list.length)return h+'<div class="empty"><strong>Nada urgente por ahora</strong>Registra productos con su fecha y los que estén por vencer aparecen acá.</div>';
+  var v=0,hh=0,p=0;
+  list.forEach(function(l){var d=dias(l.vence);if(d==null)return;if(d<0)v++;else if(d===0)hh++;else p++});
+  h+='<div class="resumen"><div><b>'+v+'</b><span>vencidos</span></div><div><b>'+hh+'</b><span>vencen hoy</span></div><div><b>'+p+'</b><span>en 1 a 3 días</span></div></div>';
   return h+list.map(tarjeta).join("");
 }
 function htmlDetalle(){
@@ -191,7 +278,7 @@ function htmlDetalle(){
   var h='<div class="top"><button class="btn ghost small" type="button" id="volver">Volver</button>'+
    '<button class="btn ghost small" type="button" id="editar">Editar lote</button></div>'+
    '<div class="sheet" style="margin-top:14px"><h2>'+esc(l.nombre||"Sin nombre")+'</h2>'+
-   '<p class="note">'+esc(l.cantidad||0)+' unidades · vence '+esc(l.vence||"—")+' · <span class="'+e.cls+'" style="font-weight:600">'+e.txt+'</span></p></div>'+
+   '<p class="note">'+esc(l.cantidad||0)+' unidades · vence '+esc(fechaCorta(l.vence))+' · <span class="'+e.cls+'" style="font-weight:700">'+e.txt+'</span></p></div>'+
    '<h2 style="margin-bottom:10px">¿Qué hacemos con este lote?</h2>';
   ["reubicar","descuento","donacion","retirar"].forEach(function(k){
     var dd=DESTINOS[k];
@@ -200,13 +287,15 @@ function htmlDetalle(){
       '<span class="d">'+esc(dd[1])+'</span></button>';
   });
   var tot=Number(l.cantidad)||0;
-  if(tot>0)h+='<label class="f" style="margin-top:8px"><span class="q">¿Cuántas unidades mueves? (de '+tot+')</span>'+
-    '<div style="display:flex;gap:10px"><input type="number" id="mover" min="1" max="'+tot+'" step="1" inputmode="numeric" value="'+esc(mover==null?tot:mover)+'">'+
-    '<button class="btn ghost small" type="button" id="todo" style="flex:none">Todas</button></div></label>'+
-    '<p class="note">Si mueves menos que el total, el resto sigue en el stock con la misma fecha.</p>';
+  if(tot>0)h+='<div class="f" style="margin-top:8px"><label class="q" for="mover">¿Cuántas unidades mueves? (de '+tot+')</label>'+
+    '<div class="stepper"><button type="button" class="paso" id="mmenos" aria-label="Una menos">−</button>'+
+    '<input type="number" id="mover" min="1" max="'+tot+'" step="1" inputmode="numeric" value="'+esc(mover==null?tot:mover)+'">'+
+    '<button type="button" class="paso" id="mmas" aria-label="Una más">+</button>'+
+    '<button class="btn ghost small" type="button" id="todo" style="flex:none">Todas</button></div>'+
+    '<p class="note">Si mueves menos que el total, el resto sigue en el stock con la misma fecha.</p></div>';
   return h+'<p class="note">Todas las opciones respetan el límite sanitario: ninguna extiende la fecha de vencimiento.</p>'+
     '<button class="btn" type="button" id="confirmar">Confirmar decisión</button>'+
-    '<p class="note bad" id="detmsg" style="margin-top:12px"></p>';
+    '<p class="note bad" id="detmsg"></p>';
 }
 function conectarDetalle(){
   document.getElementById("volver").onclick=function(){sel=null;pintar()};
@@ -214,8 +303,12 @@ function conectarDetalle(){
   Array.prototype.forEach.call(app.querySelectorAll(".opt"),function(b){b.onclick=function(){elegido=b.getAttribute("data-k");pintar()}});
   var mi=document.getElementById("mover");
   if(mi){
+    var tot=Number(sel.cantidad)||0;
+    function poner(n){n=Math.max(1,Math.min(tot,n));mi.value=n;mover=n}
     mi.oninput=function(){mover=this.value};
-    document.getElementById("todo").onclick=function(){mover=null;mi.value=Number(sel.cantidad)||0};
+    document.getElementById("todo").onclick=function(){mover=null;mi.value=tot};
+    document.getElementById("mmenos").onclick=function(){poner((Number(mi.value)||tot)-1)};
+    document.getElementById("mmas").onclick=function(){poner((Number(mi.value)||0)+1)};
   }
   document.getElementById("confirmar").onclick=function(){
     var l=lotes.filter(function(x){return x.id===sel.id})[0];if(!l)return;
@@ -240,7 +333,7 @@ function conectarDetalle(){
 function htmlEditar(){
   var l=sel;
   return '<button class="btn ghost small" type="button" id="cancelar">Cancelar</button>'+
-   '<h1 style="margin:14px 0 4px">Editar lote</h1>'+
+   '<h1 style="margin-top:16px">Editar lote</h1>'+
    '<p class="sub">Corrige lo que quedó mal registrado. El cambio queda a tu nombre.</p>'+
    '<label class="f"><span class="q">Nombre del producto</span><input type="text" id="enom" autocomplete="off" value="'+esc(l.nombre)+'"></label>'+
    '<label class="f"><span class="q">Código del producto</span><input type="text" id="ecod" autocomplete="off" placeholder="Opcional" value="'+esc(l.codigo)+'"></label>'+
@@ -248,8 +341,8 @@ function htmlEditar(){
    '<label class="f"><span class="q">Cuántos tienes</span><input type="number" id="ecant" min="0" step="1" inputmode="numeric" value="'+esc(l.cantidad||0)+'"></label>'+
    '<label class="f"><span class="q">Vence el</span><input type="date" id="evence" value="'+esc(l.vence)+'"></label></div>'+
    '<button class="btn" type="button" id="guardaredit">Guardar cambios</button>'+
-   '<p class="note" id="editmsg" style="margin-top:12px"></p>'+
-   '<button class="btn ghost" type="button" id="eliminar" style="margin-top:8px;color:var(--u0)">Eliminar lote</button>';
+   '<p class="note" id="editmsg"></p>'+
+   '<button class="btn peligro" type="button" id="eliminar" style="margin-top:12px">Eliminar lote</button>';
 }
 function conectarEditar(){
   document.getElementById("cancelar").onclick=function(){editando=false;pintar()};
@@ -277,19 +370,24 @@ function conectarEditar(){
 
 function htmlRegistrar(){
   var ops=Object.keys(productos).map(function(c){return '<option value="'+esc(productos[c])+'">'}).join("");
+  var chips=RAPIDAS.map(function(r){return '<button type="button" class="chip" data-d="'+r[0]+'" aria-pressed="false">'+r[1]+'</button>'}).join("");
   return '<h1>Registrar stock</h1>'+
-   '<p class="sub">Apunta la cámara al código de barras: se lee solo, sin tomar foto.</p>'+
+   '<p class="sub">Escanea el código, elige cuándo vence y guarda.</p>'+
    '<div id="camwrap"></div>'+
    '<button class="btn" type="button" id="abrir">Abrir cámara</button>'+
-   '<p class="note" id="scanmsg" style="margin-top:12px"></p>'+
+   '<p class="note" id="scanmsg"></p><div style="height:14px"></div>'+
    '<label class="f"><span class="q">Código del producto</span><input type="text" id="codigo" autocomplete="off" placeholder="Opcional"></label>'+
    '<label class="f"><span class="q">Nombre del producto</span><input type="text" id="nombre" list="conocidos" autocomplete="off"></label>'+
    '<datalist id="conocidos">'+ops+'</datalist>'+
-   '<div class="pair">'+
-   '<label class="f"><span class="q">Cuántos tienes</span><input type="number" id="cantidad" min="1" step="1" inputmode="numeric" value="1"></label>'+
-   '<label class="f"><span class="q">Vence el</span><input type="date" id="vence" value="'+hoyISO()+'"></label></div>'+
-   '<button class="btn" type="button" id="guardarlote">Guardar en el stock</button>'+
-   '<p class="note" id="regmsg" style="margin-top:12px"></p>';
+   '<div class="f"><span class="q">¿Cuándo vence?</span><div class="chips" id="chips">'+chips+'</div>'+
+   '<input type="date" id="vence" aria-label="Fecha de vencimiento exacta" style="margin-top:10px">'+
+   '<p class="fecha-elegida" id="fechatxt">Toca una opción o elige la fecha exacta.</p></div>'+
+   '<div class="f"><label class="q" for="cantidad">Cuántos tienes</label><div class="stepper">'+
+   '<button type="button" class="paso" id="menos" aria-label="Uno menos">−</button>'+
+   '<input type="number" id="cantidad" min="1" step="1" inputmode="numeric" value="1">'+
+   '<button type="button" class="paso" id="mas" aria-label="Uno más">+</button></div></div>'+
+   '<button class="btn navy" type="button" id="guardarlote">Guardar en el stock</button>'+
+   '<p class="note" id="regmsg"></p>';
 }
 function conectarRegistrar(){
   document.getElementById("abrir").onclick=abrirCamara;
@@ -297,6 +395,17 @@ function conectarRegistrar(){
     var c=this.value.trim(),n=document.getElementById("nombre");
     if(productos[c]&&!n.value)n.value=productos[c];
   };
+  var vence=document.getElementById("vence"),txt=document.getElementById("fechatxt"),chips=app.querySelectorAll(".chip");
+  function marcar(){
+    var v=vence.value;
+    Array.prototype.forEach.call(chips,function(c){c.setAttribute("aria-pressed",String(v!==""&&sumarDias(Number(c.getAttribute("data-d")))===v))});
+    txt.textContent=v?"Vence el "+fechaCorta(v)+" · "+etiqueta(dias(v)).txt.toLowerCase():"Toca una opción o elige la fecha exacta.";
+  }
+  Array.prototype.forEach.call(chips,function(c){c.onclick=function(){vence.value=sumarDias(Number(c.getAttribute("data-d")));marcar()}});
+  vence.onchange=marcar;vence.oninput=marcar;
+  var cant=document.getElementById("cantidad");
+  document.getElementById("menos").onclick=function(){cant.value=Math.max(1,(Number(cant.value)||1)-1)};
+  document.getElementById("mas").onclick=function(){cant.value=(Number(cant.value)||0)+1};
   document.getElementById("guardarlote").onclick=guardarLote;
 }
 function abrirCamara(){
@@ -305,7 +414,7 @@ function abrirCamara(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
     msg.textContent="Este navegador no da acceso a la cámara. Debe abrirse por https.";msg.className="note bad";return}
   wrap.innerHTML='<div class="scanbox"><video id="video" playsinline muted></video><div class="mira"></div></div>';
-  btn.textContent="Cerrar cámara";btn.onclick=function(){pararCamara();pintar()};
+  btn.textContent="Cerrar cámara";btn.onclick=function(){pararCamara();wrap.innerHTML="";btn.textContent="Abrir cámara";btn.onclick=abrirCamara;msg.textContent=""};
   msg.textContent="Buscando un código…";msg.className="note";
   var hints=new Map();
   hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
@@ -355,7 +464,8 @@ function guardarLote(){
   var cantidad=Number(document.getElementById("cantidad").value)||0;
   var vence=document.getElementById("vence").value;
   if(!nombre){msg.textContent="Falta el nombre del producto.";msg.className="note bad";return}
-  if(!vence){msg.textContent="Falta la fecha de vencimiento.";msg.className="note bad";return}
+  if(!vence){msg.textContent="Falta elegir cuándo vence.";msg.className="note bad";return}
+  if(cantidad<1){msg.textContent="La cantidad tiene que ser 1 o más.";msg.className="note bad";return}
   pararCamara();
   lotes.push({id:String(Date.now())+"-"+Math.random().toString(36).slice(2,6),codigo:codigo,nombre:nombre,
     cantidad:cantidad,vence:vence,ts:Date.now(),estado:"activo",por:sesion.nombre,cargo:sesion.cargo});
@@ -368,7 +478,18 @@ function htmlStock(){
   var h='<div class="top"><h1>Stock registrado</h1><span class="count">'+list.length+' lote'+(list.length===1?"":"s")+'</span></div>'+
         '<p class="sub">Todo lo cargado, del más próximo a vencer al más lejano. Toca un lote para decidir o editarlo.</p>';
   if(!list.length)return h+'<div class="empty"><strong>El stock está vacío</strong>Registra un producto con su fecha para empezar.</div>';
-  return h+list.map(tarjeta).join("");
+  if(list.length>3)h+='<label class="f"><span class="q">Buscar</span><input type="search" id="buscar" placeholder="Nombre o código" autocomplete="off"></label>';
+  return h+list.map(tarjeta).join("")+'<div class="empty" id="sinres" hidden><strong>Nada coincide</strong>Prueba con otra palabra.</div>';
+}
+function conectarStock(){
+  var b=document.getElementById("buscar");if(!b)return;
+  b.oninput=function(){
+    var t=norm(b.value.trim()),n=0;
+    Array.prototype.forEach.call(app.querySelectorAll(".lote"),function(x){
+      var ok=!t||norm(x.getAttribute("data-n")).indexOf(t)>=0;x.hidden=!ok;if(ok)n++;
+    });
+    document.getElementById("sinres").hidden=n>0;
+  };
 }
 function htmlHistorial(){
   var list=lotes.filter(function(l){return l.estado==="resuelto"}).sort(function(a,b){return (b.resueltoTs||0)-(a.resueltoTs||0)});
@@ -379,7 +500,7 @@ function htmlHistorial(){
     try{f=new Date(l.resueltoTs).toLocaleString("es-CL",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}catch(e){}
     return '<div class="hist"><span><b>'+esc(l.nombre)+'</b><br><span class="d">'+esc(dd[0])+' · '+esc(l.cantidad||0)+' u'+(l.resueltoPor?' · '+esc(l.resueltoPor):'')+'</span></span>'+
       '<span style="text-align:right"><span class="d">'+esc(f)+'</span><br>'+
-      '<button class="btn ghost small" type="button" data-deshacer="'+esc(l.id)+'" style="margin-top:6px;padding:6px 12px">Deshacer</button></span></div>';
+      '<button class="btn ghost small" type="button" data-deshacer="'+esc(l.id)+'">Deshacer</button></span></div>';
   }).join("");
 }
 function conectarHistorial(){
@@ -402,10 +523,11 @@ function deshacer(id){
 var tEl=null;
 function toast(t){
   if(tEl)tEl.remove();
-  tEl=document.createElement("div");tEl.className="toast";tEl.textContent=t;document.body.appendChild(tEl);
+  tEl=document.createElement("div");tEl.className="toast";tEl.setAttribute("role","status");tEl.textContent=t;document.body.appendChild(tEl);
   setTimeout(function(){if(tEl){tEl.remove();tEl=null}},2600);
 }
 window.addEventListener("pagehide",pararCamara);
+window.addEventListener("pageshow",function(e){if(e.persisted){ultima="";pintar()}});
 pintar();
 </script>
 </body>
